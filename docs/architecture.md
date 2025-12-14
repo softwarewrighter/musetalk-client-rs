@@ -3,51 +3,51 @@
 ## System Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           User Environment                               │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌──────────────┐     ┌──────────────────────────────────────────────┐  │
-│  │              │     │           musetalk-cli (Rust)                │  │
-│  │  Input Files │────▶│                                              │  │
-│  │  - image.png │     │  ┌─────────┐  ┌─────────┐  ┌─────────────┐   │  │
-│  │  - audio.wav │     │  │ Loader  │──│ Client  │──│ Assembler   │   │  │
-│  │              │     │  └─────────┘  └────┬────┘  └──────┬──────┘   │  │
-│  └──────────────┘     │                    │              │          │  │
-│                       └────────────────────┼──────────────┼──────────┘  │
-│                                            │              │             │
-│  ┌──────────────┐                          │              │             │
-│  │              │◀─────────────────────────┼──────────────┘             │
-│  │ Output Video │                          │                            │
-│  │  - output.mp4│                          │                            │
-│  │              │                          │                            │
-│  └──────────────┘                          │                            │
-│                                            │                            │
-└────────────────────────────────────────────┼────────────────────────────┘
-                                             │ HTTP/gRPC
-                                             ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        MuseTalk Server (Python)                          │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │                         API Layer                                 │   │
-│  │   POST /infer     POST /health     WebSocket /stream              │   │
-│  └──────────────────────────────────┬───────────────────────────────┘   │
-│                                     │                                    │
-│  ┌──────────────────────────────────▼───────────────────────────────┐   │
-│  │                      MuseTalk Pipeline                            │   │
-│  │                                                                   │   │
-│  │  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────────┐   │   │
-│  │  │ Whisper  │   │   VAE    │   │   UNet   │   │ Face Decoder │   │   │
-│  │  │ (Audio)  │──▶│ Encoder  │──▶│ Latent   │──▶│  (Output)    │   │   │
-│  │  └──────────┘   └──────────┘   └──────────┘   └──────────────┘   │   │
-│  │                                                                   │   │
-│  └───────────────────────────────────────────────────────────────────┘   │
-│                                     │                                    │
-│                              GPU (CUDA)                                  │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
++-------------------------------------------------------------------------+
+|                           User Environment                               |
++-------------------------------------------------------------------------+
+|                                                                          |
+|  +--------------+     +----------------------------------------------+  |
+|  |              |     |           musetalk-cli (Rust)                |  |
+|  |  Input Files |---->|                                              |  |
+|  |  - image.png |     |  +---------+  +---------+  +-------------+   |  |
+|  |  - audio.wav |     |  | Loader  |--| Client  |--| Assembler   |   |  |
+|  |              |     |  +---------+  +----+----+  +------+------+   |  |
+|  +--------------+     |                    |              |          |  |
+|                       +--------------------+--------------+----------+  |
+|                                            |              |             |
+|  +--------------+                          |              |             |
+|  |              |<-------------------------+--------------+             |
+|  | Output Video |                          |                            |
+|  |  - output.mp4|                          |                            |
+|  |              |                          |                            |
+|  +--------------+                          |                            |
+|                                            |                            |
++--------------------------------------------+----------------------------+
+                                             | HTTP/gRPC
+                                             v
++-------------------------------------------------------------------------+
+|                        MuseTalk Server (Python)                          |
++-------------------------------------------------------------------------+
+|                                                                          |
+|  +------------------------------------------------------------------+   |
+|  |                         API Layer                                 |   |
+|  |   POST /infer     POST /health     WebSocket /stream              |   |
+|  +----------------------------------+-------------------------------+   |
+|                                     |                                    |
+|  +----------------------------------v-------------------------------+   |
+|  |                      MuseTalk Pipeline                            |   |
+|  |                                                                   |   |
+|  |  +----------+   +----------+   +----------+   +--------------+   |   |
+|  |  | Whisper  |   |   VAE    |   |   UNet   |   | Face Decoder |   |   |
+|  |  | (Audio)  |-->| Encoder  |-->| Latent   |-->|  (Output)    |   |   |
+|  |  +----------+   +----------+   +----------+   +--------------+   |   |
+|  |                                                                   |   |
+|  +-------------------------------------------------------------------+   |
+|                                     |                                    |
+|                              GPU (CUDA)                                  |
+|                                                                          |
++--------------------------------------------------------------------------+
 ```
 
 ## Component Architecture
@@ -56,33 +56,33 @@
 
 ```
 musetalk-cli/
-├── src/
-│   ├── main.rs              # Entry point, CLI parsing
-│   ├── lib.rs               # Library exports
-│   ├── cli/
-│   │   ├── mod.rs           # CLI module
-│   │   ├── args.rs          # Argument parsing (clap)
-│   │   └── commands.rs      # Command handlers
-│   ├── loader/
-│   │   ├── mod.rs           # Loader module
-│   │   ├── image.rs         # Image loading/preprocessing
-│   │   └── audio.rs         # Audio loading/preprocessing
-│   ├── client/
-│   │   ├── mod.rs           # Client module
-│   │   ├── http.rs          # HTTP client for MuseTalk API
-│   │   ├── types.rs         # Request/Response types
-│   │   └── error.rs         # Client error types
-│   ├── assembler/
-│   │   ├── mod.rs           # Assembler module
-│   │   ├── frames.rs        # Frame assembly
-│   │   └── video.rs         # Video encoding
-│   ├── config/
-│   │   ├── mod.rs           # Configuration module
-│   │   └── settings.rs      # Config file handling
-│   └── error.rs             # Global error types
-├── Cargo.toml
-└── tests/
-    └── integration/
++-- src/
+|   +-- main.rs              # Entry point, CLI parsing
+|   +-- lib.rs               # Library exports
+|   +-- cli/
+|   |   +-- mod.rs           # CLI module
+|   |   +-- args.rs          # Argument parsing (clap)
+|   |   +-- commands.rs      # Command handlers
+|   +-- loader/
+|   |   +-- mod.rs           # Loader module
+|   |   +-- image.rs         # Image loading/preprocessing
+|   |   +-- audio.rs         # Audio loading/preprocessing
+|   +-- client/
+|   |   +-- mod.rs           # Client module
+|   |   +-- http.rs          # HTTP client for MuseTalk API
+|   |   +-- types.rs         # Request/Response types
+|   |   +-- error.rs         # Client error types
+|   +-- assembler/
+|   |   +-- mod.rs           # Assembler module
+|   |   +-- frames.rs        # Frame assembly
+|   |   +-- video.rs         # Video encoding
+|   +-- config/
+|   |   +-- mod.rs           # Configuration module
+|   |   +-- settings.rs      # Config file handling
+|   +-- error.rs             # Global error types
++-- Cargo.toml
++-- tests/
+    +-- integration/
 ```
 
 ### Module Responsibilities
@@ -117,49 +117,49 @@ musetalk-cli/
 
 ```
 1. Input Parsing
-   ┌─────────────────────────────────────────────────────────┐
-   │ CLI receives: --image avatar.png --audio speech.wav     │
-   │ Validates file existence and formats                     │
-   └─────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+   +-----------------------------------------------------------+
+   | CLI receives: --image avatar.png --audio speech.wav       |
+   | Validates file existence and formats                       |
+   +-----------------------------------------------------------+
+                              |
+                              v
 2. Preprocessing
-   ┌─────────────────────────────────────────────────────────┐
-   │ Image: Load PNG/JPEG, detect face region, normalize     │
-   │ Audio: Load WAV, resample if needed, chunk if long      │
-   └─────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+   +-----------------------------------------------------------+
+   | Image: Load PNG/JPEG, detect face region, normalize       |
+   | Audio: Load WAV, resample if needed, chunk if long        |
+   +-----------------------------------------------------------+
+                              |
+                              v
 3. API Request
-   ┌─────────────────────────────────────────────────────────┐
-   │ POST /infer                                              │
-   │ Body: { image: base64, audio: base64, options: {...} }  │
-   └─────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+   +-----------------------------------------------------------+
+   | POST /infer                                                |
+   | Body: { image: base64, audio: base64, options: {...} }    |
+   +-----------------------------------------------------------+
+                              |
+                              v
 4. Server Processing (MuseTalk)
-   ┌─────────────────────────────────────────────────────────┐
-   │ a. Whisper encodes audio to embeddings                  │
-   │ b. VAE encodes image to latent space                    │
-   │ c. UNet performs latent inpainting                      │
-   │ d. VAE decodes latent to output frames                  │
-   └─────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+   +-----------------------------------------------------------+
+   | a. Whisper encodes audio to embeddings                    |
+   | b. VAE encodes image to latent space                      |
+   | c. UNet performs latent inpainting                        |
+   | d. VAE decodes latent to output frames                    |
+   +-----------------------------------------------------------+
+                              |
+                              v
 5. Response Handling
-   ┌─────────────────────────────────────────────────────────┐
-   │ Receive frames (streamed or batched)                    │
-   │ Decode base64 frame data                                │
-   └─────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+   +-----------------------------------------------------------+
+   | Receive frames (streamed or batched)                      |
+   | Decode base64 frame data                                  |
+   +-----------------------------------------------------------+
+                              |
+                              v
 6. Video Assembly
-   ┌─────────────────────────────────────────────────────────┐
-   │ Assemble frames in order                                │
-   │ Add audio track                                         │
-   │ Encode to MP4 (H.264)                                   │
-   │ Write to output file                                    │
-   └─────────────────────────────────────────────────────────┘
+   +-----------------------------------------------------------+
+   | Assemble frames in order                                  |
+   | Add audio track                                           |
+   | Encode to MP4 (H.264)                                     |
+   | Write to output file                                      |
+   +-----------------------------------------------------------+
 ```
 
 ## API Contract

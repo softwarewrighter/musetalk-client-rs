@@ -171,17 +171,17 @@ RUST_LOG=debug cargo run -- -i test.png -a test.wav -o out.mp4
 
 ```
 musetalk-client-rs/
-├── src/
-│   ├── main.rs          # Entry point
-│   ├── lib.rs           # Library exports
-│   ├── cli/             # CLI argument parsing
-│   ├── loader/          # Image/audio loading
-│   ├── client/          # MuseTalk server client
-│   ├── assembler/       # Video assembly
-│   └── config/          # Configuration handling
-├── docs/                # Documentation
-├── tests/               # Integration tests
-└── Cargo.toml
++-- src/
+|   +-- main.rs          # Entry point
+|   +-- lib.rs           # Library exports
+|   +-- cli/             # CLI argument parsing
+|   +-- loader/          # Image/audio loading
+|   +-- client/          # MuseTalk server client
+|   +-- assembler/       # Video assembly
+|   +-- config/          # Configuration handling
++-- docs/                # Documentation
++-- tests/               # Integration tests
++-- Cargo.toml
 ```
 
 ## How It Works
