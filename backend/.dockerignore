@@ -1,0 +1,9 @@
+# Ignore local files that shouldn't be in the Docker context
+models/
+*.log
+*.pyc
+__pycache__/
+.git/
+.gitignore
+README.md
+*.sh
