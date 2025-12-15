@@ -6,17 +6,17 @@ use thiserror::Error;
 /// Main error type for the CLI application.
 #[derive(Error, Debug)]
 pub enum CliError {
-    /// Image file not found at the specified path.
-    #[error("Image file not found: {0}")]
-    ImageNotFound(PathBuf),
+    /// Reference file not found at the specified path.
+    #[error("Reference file not found: {0}")]
+    ReferenceNotFound(PathBuf),
 
     /// Audio file not found at the specified path.
     #[error("Audio file not found: {0}")]
     AudioNotFound(PathBuf),
 
-    /// Unsupported image format.
-    #[error("Unsupported image format: {0}. Supported formats: PNG, JPEG")]
-    UnsupportedImageFormat(String),
+    /// Unsupported reference format.
+    #[error("Unsupported reference format: {0}. Supported formats: PNG, JPEG, MP4")]
+    UnsupportedReferenceFormat(String),
 
     /// Unsupported audio format.
     #[error("Unsupported audio format: {0}. Supported formats: WAV, MP3, FLAC")]
@@ -29,6 +29,22 @@ pub enum CliError {
     /// Server connection error.
     #[error("Failed to connect to server: {0}")]
     ServerConnection(String),
+
+    /// Image loading/processing error.
+    #[error("Image loading error: {0}")]
+    ImageLoad(String),
+
+    /// Video loading/processing error.
+    #[error("Video loading error: {0}")]
+    VideoLoad(String),
+
+    /// Audio loading/processing error.
+    #[error("Audio loading error: {0}")]
+    AudioLoad(String),
+
+    /// Video encoding error.
+    #[error("Video encoding error: {0}")]
+    Video(String),
 
     /// General I/O error.
     #[error("I/O error: {0}")]

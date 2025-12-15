@@ -5,15 +5,15 @@ use std::path::PathBuf;
 
 /// MuseTalk CLI - Generate lip-synced avatar videos.
 ///
-/// Takes a static avatar image and an audio file, produces an animated
-/// video of the avatar speaking with realistic lip movements.
+/// Takes a reference (static image or video) and an audio file, produces
+/// an animated video of the avatar speaking with realistic lip movements.
 #[derive(Parser, Debug)]
 #[command(name = "musetalk-cli")]
 #[command(version, about, long_about = None)]
 pub struct Args {
-    /// Path to avatar image (PNG/JPEG)
-    #[arg(short, long)]
-    pub image: PathBuf,
+    /// Path to reference image (PNG/JPEG) or video (MP4)
+    #[arg(short = 'r', long)]
+    pub reference: PathBuf,
 
     /// Path to audio file (WAV/MP3/FLAC)
     #[arg(short, long)]
@@ -24,11 +24,11 @@ pub struct Args {
     pub output: PathBuf,
 
     /// MuseTalk server URL
-    #[arg(short, long, default_value = "http://localhost:8000")]
+    #[arg(short, long, default_value = "http://localhost:3015")]
     pub server: String,
 
     /// Output resolution (WxH)
-    #[arg(short, long, default_value = "512x512")]
+    #[arg(long, default_value = "512x512")]
     pub resolution: String,
 
     /// Frame rate
@@ -76,7 +76,7 @@ mod tests {
     fn test_parse_minimal_args() {
         let args = Args::try_parse_from_args([
             "musetalk-cli",
-            "-i",
+            "-r",
             "avatar.png",
             "-a",
             "audio.wav",
@@ -85,10 +85,10 @@ mod tests {
         ])
         .unwrap();
 
-        assert_eq!(args.image, PathBuf::from("avatar.png"));
+        assert_eq!(args.reference, PathBuf::from("avatar.png"));
         assert_eq!(args.audio, PathBuf::from("audio.wav"));
         assert_eq!(args.output, PathBuf::from("output.mp4"));
-        assert_eq!(args.server, "http://localhost:8000");
+        assert_eq!(args.server, "http://localhost:3015");
         assert_eq!(args.fps, 30);
         assert!(!args.verbose);
         assert!(!args.quiet);
@@ -98,7 +98,7 @@ mod tests {
     fn test_parse_all_args() {
         let args = Args::try_parse_from_args([
             "musetalk-cli",
-            "-i",
+            "-r",
             "avatar.png",
             "-a",
             "audio.wav",
@@ -106,7 +106,7 @@ mod tests {
             "output.mp4",
             "-s",
             "http://gpu:8000",
-            "-r",
+            "--resolution",
             "1024x1024",
             "-f",
             "60",
@@ -126,10 +126,26 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_video_reference() {
+        let args = Args::try_parse_from_args([
+            "musetalk-cli",
+            "--reference",
+            "avatar.mp4",
+            "-a",
+            "audio.wav",
+            "-o",
+            "output.mp4",
+        ])
+        .unwrap();
+
+        assert_eq!(args.reference, PathBuf::from("avatar.mp4"));
+    }
+
+    #[test]
     fn test_dry_run_flag() {
         let args = Args::try_parse_from_args([
             "musetalk-cli",
-            "-i",
+            "-r",
             "avatar.png",
             "-a",
             "audio.wav",
@@ -144,7 +160,7 @@ mod tests {
 
     #[test]
     fn test_missing_required_args() {
-        let result = Args::try_parse_from_args(["musetalk-cli", "-i", "avatar.png"]);
+        let result = Args::try_parse_from_args(["musetalk-cli", "-r", "avatar.png"]);
         assert!(result.is_err());
     }
 }
